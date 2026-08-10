@@ -204,7 +204,7 @@ class RuntimeOrchestrator {
         throw new Error('便携运行时尚未准备好，开发版需要 Python 3.11+；发行包将内置 Python。');
       }
 
-      this.progress('proxy-detect', 14, '正在检测直连、Windows 系统代理和本地代理端口');
+      this.progress('proxy-detect', 14, '正在检测直连、系统代理和本地代理端口');
       const proxy = await resolveProxy(settings);
       if (settings.proxyMode === 'manual' && !proxy.reachable) {
         throw new Error(`手动代理不可用：${settings.proxyUrl}。请启动代理软件、修改端口，或切换到自动检测。`);

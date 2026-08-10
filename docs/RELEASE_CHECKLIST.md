@@ -12,6 +12,9 @@
 - [x] 安装包 SHA-256 生成
 - [ ] Windows 代码签名证书签名
 - [ ] 在全新 Windows 用户账户中完成一次端到端安装测试
+- [ ] macOS Intel 与 Apple Silicon 安装包构建
+- [ ] macOS Developer ID 签名与 notarization
+- [ ] 在全新 macOS 用户账户中完成一次端到端安装测试
 - [ ] 使用真实的新 Tunnel 完成 ChatGPT 连接测试
 
 未完成项需要外部条件：可信代码签名证书、独立测试账户或真实 OpenAI Tunnel 配置。

@@ -24,6 +24,9 @@ function unique(values) {
 
 function normalizeProxyValue(value) {
   let text = String(value || '').trim().replace(/^['"]|['"]$/g, '');
+  // Workspace transports may wrap URL-like text in double braces. Strip that
+  // representation before URL validation so proxy detection stays portable.
+  text = text.replace(/^\{\{/, '').replace(/\}\}(?=:|$)/, '');
   if (!text || /direct access|直接访问|无代理/i.test(text)) return '';
   if (text.includes(';')) {
     const entries = Object.fromEntries(text.split(';').map((part) => part.split('=', 2)).filter((part) => part.length === 2));
@@ -32,6 +35,7 @@ function normalizeProxyValue(value) {
   text = text.replace(/^https?=/i, '').trim();
   if (!text) return '';
   if (!/^https?:\/\//i.test(text)) text = `http://${text}`;
+  text = text.replace(/^\{\{/, '').replace(/\}\}(?=:|$)/, '');
   try {
     const parsed = new URL(text);
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) return '';
@@ -61,14 +65,30 @@ async function winHttpProxyCandidates() {
   return candidate ? [normalizeProxyValue(candidate)] : [];
 }
 
+async function macSystemProxyCandidates() {
+  if (process.platform !== 'darwin') return [];
+  const result = await run('/usr/sbin/scutil', ['--proxy'], { allowFailure: true });
+  if (result.code !== 0) return [];
+  const values = Object.fromEntries(
+    [...result.stdout.matchAll(/^\s*([A-Za-z0-9]+)\s*:\s*(.+)\s*$/gm)]
+      .map((match) => [match[1], match[2]])
+  );
+  const candidates = [];
+  if (values.HTTPSEnable === '1' && values.HTTPSProxy) candidates.push(`{{http://${values.HTTPSProxy}}}:${values.HTTPSPort || 443}`);
+  if (values.HTTPEnable === '1' && values.HTTPProxy) candidates.push(`{{http://${values.HTTPProxy}}}:${values.HTTPPort || 80}`);
+  return candidates.map(normalizeProxyValue);
+}
+
 function environmentProxyCandidates() {
   return [process.env.HTTPS_PROXY, process.env.https_proxy, process.env.HTTP_PROXY, process.env.http_proxy]
     .map(normalizeProxyValue);
 }
 
 async function systemProxyCandidates() {
-  const [registry, winHttp] = await Promise.all([registryProxyCandidates(), winHttpProxyCandidates()]);
-  return unique([...environmentProxyCandidates(), ...registry, ...winHttp]);
+  const [registry, winHttp, macSystem] = await Promise.all([
+    registryProxyCandidates(), winHttpProxyCandidates(), macSystemProxyCandidates()
+  ]);
+  return unique([...environmentProxyCandidates(), ...registry, ...winHttp, ...macSystem]);
 }
 
 function probeDirect(timeout = 2500) {
@@ -169,6 +189,7 @@ module.exports = {
   COMMON_LOCAL_PORTS,
   normalizeProxyValue,
   environmentProxyCandidates,
+  macSystemProxyCandidates,
   systemProxyCandidates,
   probeDirect,
   probeHttpProxy,

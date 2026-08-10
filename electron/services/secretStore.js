@@ -16,7 +16,7 @@ class SecretStore {
 
   _writeAll(value) {
     if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('Windows 安全存储当前不可用，无法保存密钥。');
+      throw new Error('系统安全存储当前不可用，无法保存密钥。');
     }
     ensureParent(secretsFile());
     fs.writeFileSync(secretsFile(), safeStorage.encryptString(JSON.stringify(value)), { mode: 0o600 });

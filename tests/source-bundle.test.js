@@ -12,6 +12,8 @@ test('required bundled runtime artifacts exist', () => {
     'resources/coding-tools-mcp/LICENSE',
     'resources/coding-tools-mcp/NOTICE',
     'resources/tools/tunnel-client.exe',
+    'resources/tools/tunnel-client-darwin-x64',
+    'resources/tools/tunnel-client-darwin-arm64',
     'resources/tools/rg.exe',
     'resources/tools/fd.exe',
     'resources/coding-tools-mcp/python_vendor/pypdf/__init__.py',
@@ -37,6 +39,7 @@ test('portable Python does not contain a second stale coding_tools_mcp implement
 });
 
 test('portable Python isolated path loads the single bundled coding_tools_mcp source', () => {
+  if (!fs.existsSync(path.join(root, 'resources/native-python/python.exe'))) return;
   const pth = fs.readFileSync(path.join(root, 'resources/native-python/python312._pth'), 'utf8');
   assert.match(pth, /\.\.\\coding-tools-mcp\\python_vendor/);
   assert.match(pth, /\.\.\\coding-tools-mcp/);

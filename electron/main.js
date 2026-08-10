@@ -347,8 +347,20 @@ function registerIpc() {
   secureHandle('logs:read', () => invokeSafely(async () => log.read()));
   secureHandle('logs:clear', () => invokeSafely(async () => { log.clear(); return true; }));
   secureHandle('environment:install-python', () => invokeSafely(async () => {
-    const result = await run('winget.exe', ['install', '--id', 'Python.Python.3.12', '-e', '--accept-source-agreements', '--accept-package-agreements']);
-    return result.stdout;
+    if (process.platform === 'win32') {
+      const result = await run('winget.exe', ['install', '--id', 'Python.Python.3.12', '-e', '--accept-source-agreements', '--accept-package-agreements']);
+      return result.stdout;
+    }
+    if (process.platform === 'darwin') {
+      const brew = await run('which', ['brew'], { allowFailure: true });
+      if (brew.code === 0) {
+        const result = await run('brew', ['install', 'python@3.12']);
+        return result.stdout;
+      }
+      await shell.openExternal('https://www.python.org/downloads/macos/');
+      return '已打开 Python for macOS 下载页面，请安装 Python 3.11 或更高版本。';
+    }
+    throw new Error('当前系统不支持自动安装 Python，请手动安装 Python 3.11+。');
   }));
   secureHandle('shell:open', (_event, target) => invokeSafely(async () => {
     const allowed = new Set(['chatgpt-connectors', 'openai-tunnels', 'openai-runtime-keys', 'tunnel-ui', 'coding-tools-source']);

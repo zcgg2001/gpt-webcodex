@@ -5,7 +5,8 @@ const paths = require('../paths');
 const { resolveProxy } = require('./proxyService');
 
 async function commandExists(name) {
-  const result = await run('where.exe', [name], { allowFailure: true });
+  const locator = process.platform === 'win32' ? 'where.exe' : 'which';
+  const result = await run(locator, [name], { allowFailure: true });
   return result.code === 0;
 }
 
@@ -23,11 +24,17 @@ function canConnect(host, port, timeout = 800) {
 async function pythonStatus() {
   const candidates = [];
   if (fs.existsSync(paths.portablePython())) {
-    const pythonw = pathForPythonw(paths.portablePython());
-    candidates.push({ command: paths.portablePython(), launchCommand: fs.existsSync(pythonw) ? pythonw : paths.portablePython(), args: [] });
+    const backgroundPython = pathForBackgroundPython(paths.portablePython());
+    candidates.push({ command: paths.portablePython(), launchCommand: fs.existsSync(backgroundPython) ? backgroundPython : paths.portablePython(), args: [] });
   }
-  if (await commandExists('py.exe')) candidates.push({ command: 'py.exe', launchCommand: await commandExists('pyw.exe') ? 'pyw.exe' : 'py.exe', args: ['-3'] });
-  if (await commandExists('python.exe')) candidates.push({ command: 'python.exe', launchCommand: await commandExists('pythonw.exe') ? 'pythonw.exe' : 'python.exe', args: [] });
+  if (process.platform === 'win32') {
+    if (await commandExists('py.exe')) candidates.push({ command: 'py.exe', launchCommand: await commandExists('pyw.exe') ? 'pyw.exe' : 'py.exe', args: ['-3'] });
+    if (await commandExists('python.exe')) candidates.push({ command: 'python.exe', launchCommand: await commandExists('pythonw.exe') ? 'pythonw.exe' : 'python.exe', args: [] });
+  } else {
+    for (const command of ['python3.13', 'python3.12', 'python3.11', 'python3']) {
+      if (await commandExists(command)) candidates.push({ command, launchCommand: command, args: [] });
+    }
+  }
   for (const candidate of candidates) {
     const result = await run(candidate.command, [...candidate.args, '--version'], { allowFailure: true });
     const output = `${result.stdout} ${result.stderr}`.trim();
@@ -41,7 +48,8 @@ async function pythonStatus() {
   return { installed: false, command: '', launchCommand: '', prefixArgs: [], version: '' };
 }
 
-function pathForPythonw(pythonPath) {
+function pathForBackgroundPython(pythonPath) {
+  if (process.platform !== 'win32') return pythonPath;
   return require('node:path').join(require('node:path').dirname(pythonPath), 'pythonw.exe');
 }
 
@@ -72,4 +80,4 @@ class EnvironmentService {
 
 }
 
-module.exports = { EnvironmentService, commandExists, canConnect, pythonStatus };
+module.exports = { EnvironmentService, commandExists, canConnect, pythonStatus, pathForBackgroundPython };

@@ -86,7 +86,10 @@ class BuildVerificationService {
       if (command.length > 1000 || /[\r\n\0]/.test(command)) throw new Error('构建命令格式不安全。');
       this.emit({ stage, status: 'running', command });
       const started = Date.now();
-      const result = await run('cmd.exe', ['/d', '/s', '/c', command], { cwd: root, allowFailure: true, timeoutMs: 600000, onOutput: (stream, text) => this.emit({ stage, status: 'output', stream, text }) });
+      const shell = process.platform === 'win32'
+        ? { command: 'cmd.exe', args: ['/d', '/s', '/c', command] }
+        : { command: '/bin/sh', args: ['-lc', command] };
+      const result = await run(shell.command, shell.args, { cwd: root, allowFailure: true, timeoutMs: 600000, onOutput: (stream, text) => this.emit({ stage, status: 'output', stream, text }) });
       return { status: result.code === 0 ? 'passed' : 'failed', command, exitCode: result.code, durationMs: Date.now() - started, summary: `${result.stdout}\n${result.stderr}`.trim().slice(-4000) };
     };
     try {

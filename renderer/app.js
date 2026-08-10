@@ -276,7 +276,7 @@ function renderSnapshot(snapshot, options = {}) {
   $('#heroStartButton').textContent = ready ? '重新部署' : '开始部署';
   $('#topStartButton').textContent = ready ? '重新部署' : '一键启动';
 
-  $('#runtimeKeyHint').textContent = secrets.runtimeApiKey ? '已使用 Windows 安全存储保存' : '尚未保存';
+  $('#runtimeKeyHint').textContent = secrets.runtimeApiKey ? '已使用系统安全存储保存' : '尚未保存';
   $('#runtimeKeyHint').style.color = secrets.runtimeApiKey ? 'var(--green)' : '';
   $('#settingsKeyState').textContent = secrets.runtimeApiKey ? '已加密保存' : '尚未保存';
   $('#guideLocalUrl').textContent = status.localMcpUrl;
@@ -341,8 +341,8 @@ function renderEnvironment(environment) {
   $('#envPythonText').textContent = environment.python.installed ? environment.python.version : '未找到 Python 3.11+';
   const proxy = environment.proxy;
   const sourceLabels = {
-    'auto-direct': '自动检测 · 直连', 'auto-system': '自动检测 · Windows 系统代理', 'auto-local': '自动检测 · 本地代理',
-    'system': 'Windows 系统代理', 'system-direct': '系统未设代理 · 直连', manual: '手动代理', direct: '强制直连',
+    'auto-direct': '自动检测 · 直连', 'auto-system': '自动检测 · 系统代理', 'auto-local': '自动检测 · 本地代理',
+    'system': '系统代理', 'system-direct': '系统未设代理 · 直连', manual: '手动代理', direct: '强制直连',
     'auto-unavailable': '未找到可用网络路径', error: '代理检测失败'
   };
   setDot($('#envProxyDot'), proxy.reachable ? 'ready' : 'error');
@@ -670,7 +670,7 @@ function bindEvents() {
   $('#saveRuntimeKey').addEventListener('click', async () => {
     try {
       if (!(await saveKeyIfPresent())) throw new Error('请先粘贴 Runtime API Key。');
-      toast('密钥已安全保存', '密钥已使用 Windows 安全存储加密。');
+      toast('密钥已安全保存', '密钥已使用系统安全存储加密。');
       await refreshSnapshot();
     } catch (error) { toast('保存失败', error.message, 'error'); }
   });

@@ -4,8 +4,7 @@ const { tunnelExecutable, tunnelLogFile, stateFile } = require('../paths');
 const { readJson, updateJsonAtomic, ensureParent } = require('./jsonStore');
 const { rotateLog } = require('./logService');
 const { canConnect } = require('./environmentService');
-const { run } = require('./commandRunner');
-const { isAlive } = require('./nativeService');
+const { isAlive, terminateProcess } = require('./processControl');
 
 class TunnelService {
   constructor(log) {
@@ -13,7 +12,7 @@ class TunnelService {
   }
 
   async start(settings, runtimeApiKey, token, progress) {
-    if (!fs.existsSync(tunnelExecutable())) throw new Error('安装包中缺少 tunnel-client.exe。');
+    if (!fs.existsSync(tunnelExecutable())) throw new Error(`安装包中缺少当前平台的 tunnel-client：${tunnelExecutable()}`);
     if (!runtimeApiKey) throw new Error('请先保存 OpenAI Runtime API Key。');
     if (!settings.tunnelId) throw new Error('请先填写 OpenAI Tunnel ID。');
     await this.stop();
@@ -65,7 +64,7 @@ class TunnelService {
   async stop() {
     const state = readJson(stateFile(), {});
     if (!isAlive(state.tunnelPid)) return false;
-    await run('taskkill.exe', ['/PID', String(state.tunnelPid), '/T', '/F'], { allowFailure: true });
+    await terminateProcess(state.tunnelPid);
     updateJsonAtomic(stateFile(), (value) => ({ ...value, tunnelPid: null }));
     return true;
   }

@@ -7,7 +7,7 @@ Renderer（无 Node 权限）
   ↓ contextBridge / allowlisted IPC
 Electron Main
   ├─ SettingsStore：非敏感配置
-  ├─ SecretStore：Windows safeStorage / DPAPI
+  ├─ SecretStore：系统 safeStorage（Windows DPAPI / macOS Keychain）
   ├─ RuntimeOrchestrator：部署状态机
   ├─ DockerService：隔离容器模式
   ├─ NativeService：便携 Python 模式
@@ -29,10 +29,10 @@ Electron Main
 
 ### 便携运行模式
 
-- 使用安装包内置的 Python 3.12 解释器。
+- Windows 使用安装包内置的 Python 3.12；macOS 使用系统 Python 3.11+。
 - Coding Tools MCP 与 PyJWT 安装在隔离的 `site-packages`。
 - 不依赖系统 Python，也不会向系统 Python 安装包。
-- 文件工具仍受 MCP 工作区边界约束，但 Windows 不具备 Docker/Landlock 等同级系统隔离，因此默认推荐 Docker。
+- 文件工具仍受 MCP 工作区边界约束；Windows 与 macOS 都不具备 Linux Landlock 等同级系统隔离。
 
 ## 密钥与认证
 

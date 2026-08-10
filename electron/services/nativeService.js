@@ -6,11 +6,7 @@ const { pythonStatus } = require('./environmentService');
 const { stateFile, mcpLogFile, resourcesRoot } = require('../paths');
 const { readJson, updateJsonAtomic, ensureParent } = require('./jsonStore');
 const { rotateLog } = require('./logService');
-
-function isAlive(pid) {
-  if (!Number.isInteger(pid)) return false;
-  try { process.kill(pid, 0); return true; } catch { return false; }
-}
+const { isAlive, terminateProcess } = require('./processControl');
 
 function runtimeFingerprint(settings) {
   return crypto.createHash('sha256').update(JSON.stringify({
@@ -111,8 +107,7 @@ class NativeService {
     const alive = isAlive(state.nativePid);
     try {
       if (alive) {
-        const { run } = require('./commandRunner');
-        await run('taskkill.exe', ['/PID', String(state.nativePid), '/T', '/F'], { allowFailure: true });
+        await terminateProcess(state.nativePid);
       }
       return alive;
     } finally {
