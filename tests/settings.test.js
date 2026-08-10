@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const path = require('node:path');
 const { normalize, validateRuntimeSettings, mergeRecentWorkspaces, workspaceKey } = require('../electron/services/config');
 
 test('invalid modes fall back to safe defaults', () => {
@@ -42,16 +43,20 @@ test('tunnel id must use the official prefix', () => {
 
 
 test('recent workspaces use a 50-item MRU list', () => {
+  const workspaceAt = (index) => path.join(path.parse(process.cwd()).root, `workspace-${index}`);
   let recent = [];
   for (let index = 0; index < 55; index += 1) {
-    recent = mergeRecentWorkspaces(recent, `C:\\workspace-${index}`);
+    recent = mergeRecentWorkspaces(recent, workspaceAt(index));
   }
   assert.equal(recent.length, 50);
-  assert.equal(recent[0], 'C:\\workspace-54');
-  assert.equal(recent.at(-1), 'C:\\workspace-5');
+  assert.equal(recent[0], workspaceAt(54));
+  assert.equal(recent.at(-1), workspaceAt(5));
 
-  recent = mergeRecentWorkspaces(recent, 'c:\\WORKSPACE-20\\');
+  const duplicate = process.platform === 'win32'
+    ? `${workspaceAt(20).toUpperCase()}${path.sep}`
+    : `${workspaceAt(20)}${path.sep}`;
+  recent = mergeRecentWorkspaces(recent, duplicate);
   assert.equal(recent.length, 50);
-  assert.equal(workspaceKey(recent[0]), workspaceKey('C:\\workspace-20'));
-  assert.equal(recent.filter((item) => workspaceKey(item) === workspaceKey('C:\\workspace-20')).length, 1);
+  assert.equal(workspaceKey(recent[0]), workspaceKey(workspaceAt(20)));
+  assert.equal(recent.filter((item) => workspaceKey(item) === workspaceKey(workspaceAt(20))).length, 1);
 });
